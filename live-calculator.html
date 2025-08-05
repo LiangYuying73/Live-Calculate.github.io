@@ -1,0 +1,1074 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>咩咩的直播工资计算系统</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+    <style>
+        :root {
+            --primary: #00b4ff;
+            --secondary: #0077cc;
+            --bg-dark: #001a33;
+            --bg-darker: #00101f;
+            --text: #e6f7ff;
+            --highlight: #00e1ff;
+            --danger: #ff3366;
+            --success: #00ff99;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Courier New', 'Microsoft YaHei', monospace;
+        }
+        
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text);
+            padding: 0;
+            line-height: 1.6;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(0, 180, 255, 0.1) 0%, transparent 20%),
+                radial-gradient(circle at 90% 80%, rgba(0, 225, 255, 0.1) 0%, transparent 20%),
+                linear-gradient(to bottom, var(--bg-darker), var(--bg-dark));
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .container::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                linear-gradient(90deg, var(--bg-darker) 1px, transparent 1px),
+                linear-gradient(var(--bg-darker) 1px, transparent 1px);
+            background-size: 20px 20px;
+            opacity: 0.1;
+            z-index: -1;
+        }
+        
+        .header {
+            text-align: center;
+            padding: 30px 0;
+            position: relative;
+            overflow: hidden;
+            border-bottom: 1px solid rgba(0, 180, 255, 0.3);
+            margin-bottom: 30px;
+        }
+        
+        .header::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, var(--primary), transparent);
+            animation: scanline 4s linear infinite;
+        }
+        
+        @keyframes scanline {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            color: var(--highlight);
+            text-shadow: 0 0 10px rgba(0, 225, 255, 0.5);
+            letter-spacing: 2px;
+            position: relative;
+        }
+        
+        h1::after {
+            content: "";
+            display: block;
+            width: 100px;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary), transparent);
+            margin: 15px auto;
+        }
+        
+        h2 {
+            font-size: 1.5rem;
+            color: var(--primary);
+            margin: 25px 0 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(0, 180, 255, 0.3);
+        }
+        
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: rgba(0, 20, 40, 0.6);
+            border: 1px solid rgba(0, 180, 255, 0.2);
+            border-radius: 8px;
+            padding: 20px;
+            backdrop-filter: blur(5px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .stat-card::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(0, 180, 255, 0.1), transparent);
+            z-index: -1;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+            border-color: var(--primary);
+        }
+        
+        .stat-label {
+            font-size: 0.9rem;
+            color: var(--primary);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .stat-label i {
+            margin-right: 8px;
+            font-size: 1.1rem;
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--highlight);
+            margin: 5px 0;
+        }
+        
+        .stat-subtext {
+            font-size: 0.8rem;
+            color: rgba(230, 247, 255, 0.7);
+        }
+        
+        .progress-bar {
+            height: 6px;
+            background: rgba(0, 180, 255, 0.2);
+            border-radius: 3px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--highlight));
+            border-radius: 3px;
+            transition: width 0.5s ease;
+        }
+        
+        .form-panel {
+            background: rgba(0, 26, 51, 0.7);
+            border: 1px solid rgba(0, 180, 255, 0.3);
+            border-radius: 8px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(5px);
+            position: relative;
+        }
+        
+        .form-panel::after {
+            content: "";
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            right: 5px;
+            bottom: 5px;
+            border: 1px solid rgba(0, 180, 255, 0.1);
+            border-radius: 4px;
+            pointer-events: none;
+        }
+        
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+            position: relative;
+        }
+        
+        .form-group::after {
+            content: "";
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, var(--primary), transparent);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+        
+        .form-group:focus-within::after {
+            transform: scaleX(1);
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--primary);
+            font-size: 0.9rem;
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 12px 15px;
+            background: rgba(0, 40, 80, 0.5);
+            border: 1px solid rgba(0, 180, 255, 0.3);
+            border-radius: 6px;
+            color: var(--text);
+            font-size: 1rem;
+            transition: all 0.3s;
+            font-family: 'Courier New', monospace;
+        }
+        
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--highlight);
+            box-shadow: 0 0 0 2px rgba(0, 225, 255, 0.3);
+        }
+        
+        .file-upload {
+            margin-top: 20px;
+        }
+        
+        .file-label {
+            display: block;
+            padding: 20px;
+            border: 2px dashed rgba(0, 180, 255, 0.3);
+            border-radius: 6px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: rgba(0, 40, 80, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .file-label:hover {
+            border-color: var(--highlight);
+            background: rgba(0, 180, 255, 0.1);
+        }
+        
+        .file-label i {
+            font-size: 2rem;
+            color: var(--primary);
+            margin-bottom: 10px;
+            display: block;
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .preview-images {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .preview-image {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 4px;
+            border: 1px solid rgba(0, 180, 255, 0.3);
+            transition: all 0.3s;
+            position: relative;
+        }
+        
+        .preview-image:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 15px rgba(0, 180, 255, 0.5);
+            z-index: 10;
+        }
+        
+        .remove-image {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            width: 24px;
+            height: 24px;
+            background: var(--danger);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px;
+            cursor: pointer;
+            border: 1px solid white;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 12px 25px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 10px rgba(0, 180, 255, 0.3);
+            position: relative;
+            overflow: hidden;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .btn::before {
+            content: "";
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(
+                to bottom right,
+                rgba(255, 255, 255, 0) 0%,
+                rgba(255, 255, 255, 0.1) 50%,
+                rgba(255, 255, 255, 0) 100%
+            );
+            transform: rotate(30deg);
+            transition: all 0.3s;
+        }
+        
+        .btn:hover::before {
+            left: 100%;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0, 180, 255, 0.5);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .btn-block {
+            display: block;
+            width: 100%;
+        }
+        
+        .btn-highlight {
+            background: linear-gradient(135deg, var(--highlight), var(--success));
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(0, 225, 255, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(0, 225, 255, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 225, 255, 0); }
+        }
+        
+        .records-list {
+            margin-top: 30px;
+        }
+        
+        .record-card {
+            background: rgba(0, 26, 51, 0.7);
+            border: 1px solid rgba(0, 180, 255, 0.3);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(5px);
+        }
+        
+        .record-card::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: linear-gradient(to bottom, var(--primary), var(--highlight));
+        }
+        
+        .record-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+            border-color: var(--highlight);
+        }
+        
+        .record-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .record-date {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--highlight);
+        }
+        
+        .record-day {
+            font-size: 0.9rem;
+            color: var(--primary);
+            background: rgba(0, 180, 255, 0.2);
+            padding: 3px 8px;
+            border-radius: 4px;
+        }
+        
+        .record-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .detail-item {
+            margin-bottom: 10px;
+        }
+        
+        .detail-label {
+            font-size: 0.8rem;
+            color: var(--primary);
+            margin-bottom: 3px;
+        }
+        
+        .detail-value {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: var(--text);
+        }
+        
+        .salary-value {
+            color: var(--highlight);
+            font-size: 1.3rem;
+        }
+        
+        .record-images {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .record-image {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 4px;
+            border: 1px solid rgba(0, 180, 255, 0.3);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .record-image:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(0, 180, 255, 0.5);
+        }
+        
+        .delete-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: var(--danger);
+            color: white;
+            border: none;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .delete-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 10px rgba(255, 51, 102, 0.5);
+        }
+        
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 10, 20, 0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+        }
+        
+        .modal-content {
+            max-width: 90%;
+            max-height: 90%;
+            position: relative;
+        }
+        
+        .modal-image {
+            max-width: 100%;
+            max-height: 80vh;
+            border-radius: 8px;
+            border: 2px solid var(--highlight);
+            box-shadow: 0 0 30px rgba(0, 225, 255, 0.5);
+        }
+        
+        .close-modal {
+            position: absolute;
+            top: -15px;
+            right: -15px;
+            background: var(--danger);
+            color: white;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 1.2rem;
+            box-shadow: 0 0 15px rgba(255, 51, 102, 0.5);
+        }
+        
+        .month-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .month-title {
+            font-size: 1.5rem;
+            color: var(--highlight);
+            text-shadow: 0 0 10px rgba(0, 225, 255, 0.3);
+        }
+        
+        .month-arrows {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .month-arrow {
+            background: rgba(0, 180, 255, 0.2);
+            border: 1px solid var(--primary);
+            color: var(--primary);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .month-arrow:hover {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 50px 20px;
+            color: rgba(230, 247, 255, 0.5);
+        }
+        
+        .empty-icon {
+            font-size: 3rem;
+            color: var(--primary);
+            margin-bottom: 20px;
+        }
+        
+        .empty-text {
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+        }
+        
+        /* Terminal-like elements */
+        .terminal-line {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .prompt {
+            color: var(--highlight);
+            margin-right: 10px;
+            font-weight: bold;
+        }
+        
+        .command {
+            color: var(--text);
+            font-family: 'Courier New', monospace;
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+            
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .record-details {
+                grid-template-columns: 1fr;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="app" class="container">
+        <div class="header">
+            <h1>咩咩的直播工资计算系统</h1>
+            <div class="terminal-line">
+                <span class="prompt">$</span>
+                <span class="command">记录直播时长 · 计算每日工资 · 管理收入证明</span>
+            </div>
+        </div>
+        
+        <div class="dashboard">
+            <div class="stat-card">
+                <div class="stat-label">
+                    <i>📅</i> 本月直播天数
+                </div>
+                <div class="stat-value">{{ uniqueDaysCount }}</div>
+                <div class="stat-subtext">当前月份: {{ displayMonth }}</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-label">
+                    <i>⏱️</i> 本月总时长
+                </div>
+                <div class="stat-value">{{ currentMonthStats.hours }}h</div>
+                <div class="stat-subtext">日均 {{ currentMonthStats.avgHours }}h/天</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-label">
+                    <i>💰</i> 本月总收入
+                </div>
+                <div class="stat-value">¥{{ currentMonthStats.salary }}</div>
+                <div class="stat-subtext">预计全月 ¥{{ currentMonthStats.projectedSalary }}</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-label">
+                    <i>📊</i> 本月进度
+                </div>
+                <div class="stat-value">{{ currentMonthStats.progress }}%</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" :style="{ width: currentMonthStats.progress + '%' }"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="form-panel">
+            <h2>添加新记录</h2>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="date">日期</label>
+                    <input type="date" id="date" v-model="newRecord.date" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="startTime">开始时间</label>
+                    <input type="time" id="startTime" v-model="newRecord.startTime" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="endTime">结束时间</label>
+                    <input type="time" id="endTime" v-model="newRecord.endTime" required>
+                </div>
+            </div>
+            
+            <div class="file-upload">
+                <label>上传证明图片</label>
+                <input type="file" id="images" class="file-input" multiple accept="image/*" @change="handleImageUpload">
+                <label for="images" class="file-label">
+                    <i>📁</i>
+                    点击或拖拽文件到此处<br>
+                    <span style="font-size: 0.8rem; color: rgba(230, 247, 255, 0.7);">支持多张图片上传</span>
+                </label>
+                
+                <div class="preview-images" v-if="newRecord.images.length > 0">
+                    <div v-for="(img, index) in newRecord.images" :key="index" class="image-preview">
+                        <img :src="img.url" class="preview-image" @click="showImage(img.url)">
+                        <div class="remove-image" @click="removeImage(index)">×</div>
+                    </div>
+                </div>
+            </div>
+            
+            <button class="btn btn-block btn-highlight" @click="addRecord" :disabled="!formValid">
+                添加记录
+            </button>
+        </div>
+        
+        <div class="month-nav">
+            <div class="month-title">{{ displayMonth }}</div>
+            <div class="month-arrows">
+                <div class="month-arrow" @click="prevMonth">←</div>
+                <div class="month-arrow" @click="nextMonth">→</div>
+            </div>
+        </div>
+        
+        <div class="records-list">
+            <h2>直播记录</h2>
+            
+            <div v-if="filteredRecords.length === 0" class="empty-state">
+                <div class="empty-icon">📭</div>
+                <div class="empty-text">暂无 {{ displayMonth }} 的直播记录</div>
+                <button class="btn" @click="scrollToForm">添加第一条记录</button>
+            </div>
+            
+            <div v-for="(record, index) in filteredRecords" :key="index" class="record-card">
+                <div class="delete-btn" @click="deleteRecord(index)">×</div>
+                
+                <div class="record-header">
+                    <div class="record-date">{{ formatDate(record.date) }}</div>
+                    <div class="record-day">{{ getDayName(record.date) }}</div>
+                </div>
+                
+                <div class="record-details">
+                    <div class="detail-item">
+                        <div class="detail-label">直播时长</div>
+                        <div class="detail-value">{{ record.totalHours }} 小时</div>
+                    </div>
+                    
+                    <div class="detail-item">
+                        <div class="detail-label">标准时段</div>
+                        <div class="detail-value">{{ record.primeHours }}h (¥{{ record.primeSalary }})</div>
+                    </div>
+                    
+                    <div class="detail-item">
+                        <div class="detail-label">非标准时段</div>
+                        <div class="detail-value">{{ record.normalHours }}h (¥{{ record.normalSalary }})</div>
+                    </div>
+                    
+                    <div class="detail-item">
+                        <div class="detail-label">当日工资</div>
+                        <div class="detail-value salary-value">¥{{ record.salary }}</div>
+                    </div>
+                </div>
+                
+                <div v-if="record.images.length > 0">
+                    <div class="detail-label">证明图片</div>
+                    <div class="record-images">
+                        <img v-for="(img, imgIndex) in record.images" 
+                             :key="imgIndex" 
+                             :src="img.url" 
+                             class="record-image" 
+                             @click="showImage(img.url)">
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div v-if="showModal" class="modal" @click.self="closeModal">
+            <div class="modal-content">
+                <img :src="modalImage" class="modal-image">
+                <button class="close-modal" @click="closeModal">×</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        new Vue({
+            el: '#app',
+            data: {
+                records: [],
+                newRecord: {
+                    date: '',
+                    startTime: '',
+                    endTime: '',
+                    images: []
+                },
+                currentMonth: new Date().getMonth(),
+                currentYear: new Date().getFullYear(),
+                showModal: false,
+                modalImage: ''
+            },
+            created() {
+                this.loadRecords();
+                // Set default date to today
+                const today = new Date();
+                this.newRecord.date = today.toISOString().split('T')[0];
+            },
+            computed: {
+                displayMonth() {
+                    const months = ['一月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '十一月', '十二月'];
+                    return `${this.currentYear}年 ${months[this.currentMonth]}`;
+                },
+                filteredRecords() {
+                    return this.records
+                        .filter(record => {
+                            const recordDate = new Date(record.date);
+                            return recordDate.getMonth() === this.currentMonth && 
+                                   recordDate.getFullYear() === this.currentYear;
+                        })
+                        .sort((a, b) => new Date(b.date) - new Date(a.date));
+                },
+                uniqueDaysCount() {
+                    const uniqueDates = new Set();
+                    this.filteredRecords.forEach(record => {
+                        uniqueDates.add(record.date);
+                    });
+                    return uniqueDates.size;
+                },
+                currentMonthStats() {
+                    const filtered = this.records.filter(record => {
+                        const recordDate = new Date(record.date);
+                        return recordDate.getMonth() === new Date().getMonth() && 
+                               recordDate.getFullYear() === new Date().getFullYear();
+                    });
+                    
+                    const uniqueDates = new Set();
+                    filtered.forEach(record => uniqueDates.add(record.date));
+                    const days = uniqueDates.size;
+                    
+                    const hours = filtered.reduce((sum, record) => sum + parseFloat(record.totalHours), 0);
+                    const salary = filtered.reduce((sum, record) => sum + parseFloat(record.salary), 0);
+                    const avgHours = days > 0 ? (hours / days).toFixed(1) : '0.0';
+                    
+                    // Calculate progress based on current day of month
+                    const today = new Date();
+                    const currentDay = today.getDate();
+                    const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+                    const progress = Math.round((currentDay / daysInMonth) * 100);
+                    
+                    // Calculate projected salary
+                    const projectedSalary = progress > 0 ? Math.round((salary / currentDay) * daysInMonth) : 0;
+                    
+                    return {
+                        days,
+                        hours: hours.toFixed(1),
+                        salary: salary.toFixed(0),
+                        avgHours,
+                        progress,
+                        projectedSalary
+                    };
+                },
+                formValid() {
+                    return this.newRecord.date && this.newRecord.startTime && this.newRecord.endTime;
+                }
+            },
+            methods: {
+                loadRecords() {
+                    const saved = localStorage.getItem('liveRecords');
+                    if (saved) {
+                        try {
+                            // Parse and migrate old data if needed
+                            const parsed = JSON.parse(saved);
+                            this.records = Array.isArray(parsed) ? parsed : [];
+                            
+                            // Ensure all records have images array
+                            this.records.forEach(record => {
+                                if (!record.images) {
+                                    record.images = [];
+                                }
+                            });
+                        } catch (e) {
+                            console.error('Failed to parse saved records', e);
+                        }
+                    }
+                },
+                saveRecords() {
+                    localStorage.setItem('liveRecords', JSON.stringify(this.records));
+                },
+                addRecord() {
+                    if (!this.formValid) {
+                        alert('请填写完整信息');
+                        return;
+                    }
+                    
+                    const start = new Date(`${this.newRecord.date}T${this.newRecord.startTime}`);
+                    const end = new Date(`${this.newRecord.date}T${this.newRecord.endTime}`);
+                    
+                    if (end <= start) {
+                        alert('结束时间必须晚于开始时间');
+                        return;
+                    }
+                    
+                    const totalHours = (end - start) / (1000 * 60 * 60);
+                    if (totalHours > 24) {
+                        alert('直播时长不能超过24小时');
+                        return;
+                    }
+                    
+                    // Calculate salary
+                    const dayOfWeek = new Date(this.newRecord.date).getDay(); // 0 is Sunday
+                    const isWeekday = dayOfWeek >= 1 && dayOfWeek <= 4; // Mon-Thu
+                    
+                    let primeHours = 0;
+                    let normalHours = 0;
+                    
+                    // Split into minutes for more accurate calculation
+                    const startMinutes = start.getHours() * 60 + start.getMinutes();
+                    const endMinutes = end.getHours() * 60 + end.getMinutes();
+                    
+                    for (let minute = startMinutes; minute < endMinutes; minute++) {
+                        const hour = Math.floor(minute / 60);
+                        const isPrimeTime = isWeekday && hour >= 9 && hour < 17;
+                        
+                        if (isPrimeTime) {
+                            primeHours += 1/60;
+                        } else {
+                            normalHours += 1/60;
+                        }
+                    }
+                    
+                    // Cap at 6 hours
+                    const totalPaidHours = Math.min(primeHours + normalHours, 6);
+                    if (primeHours + normalHours > 6) {
+                        // Adjust proportionally
+                        const ratio = 6 / (primeHours + normalHours);
+                        primeHours *= ratio;
+                        normalHours *= ratio;
+                    }
+                    
+                    const primeSalary = primeHours * 20;
+                    const normalSalary = normalHours * 10;
+                    const totalSalary = primeSalary + normalSalary;
+                    
+                    this.records.push({
+                        date: this.newRecord.date,
+                        startTime: this.newRecord.startTime,
+                        endTime: this.newRecord.endTime,
+                        totalHours: totalHours.toFixed(1),
+                        primeHours: primeHours.toFixed(1),
+                        normalHours: normalHours.toFixed(1),
+                        primeSalary: primeSalary.toFixed(0),
+                        normalSalary: normalSalary.toFixed(0),
+                        salary: totalSalary.toFixed(0),
+                        images: [...this.newRecord.images]
+                    });
+                    
+                    this.saveRecords();
+                    
+                    // Reset form
+                    this.newRecord.startTime = '';
+                    this.newRecord.endTime = '';
+                    this.newRecord.images = [];
+                    
+                    // Scroll to top
+                    window.scrollTo(0, 0);
+                },
+                deleteRecord(index) {
+                    if (confirm('确定要删除这条记录吗？')) {
+                        this.records.splice(index, 1);
+                        this.saveRecords();
+                    }
+                },
+                handleImageUpload(e) {
+                    const files = e.target.files;
+                    if (!files.length) return;
+                    
+                    for (let i = 0; i < files.length; i++) {
+                        const file = files[i];
+                        if (!file.type.match('image.*')) continue;
+                        
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            this.newRecord.images.push({
+                                name: file.name,
+                                url: e.target.result
+                            });
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                    
+                    // Reset input to allow selecting same file again
+                    e.target.value = '';
+                },
+                removeImage(index) {
+                    this.newRecord.images.splice(index, 1);
+                },
+                formatDate(dateStr) {
+                    const date = new Date(dateStr);
+                    return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`;
+                },
+                getDayName(dateStr) {
+                    const days = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+                    const date = new Date(dateStr);
+                    return days[date.getDay()];
+                },
+                prevMonth() {
+                    if (this.currentMonth === 0) {
+                        this.currentMonth = 11;
+                        this.currentYear--;
+                    } else {
+                        this.currentMonth--;
+                    }
+                },
+                nextMonth() {
+                    if (this.currentMonth === 11) {
+                        this.currentMonth = 0;
+                        this.currentYear++;
+                    } else {
+                        this.currentMonth++;
+                    }
+                },
+                showImage(url) {
+                    this.modalImage = url;
+                    this.showModal = true;
+                },
+                closeModal() {
+                    this.showModal = false;
+                    this.modalImage = '';
+                },
+                scrollToForm() {
+                    document.querySelector('.form-panel').scrollIntoView({ 
+                        behavior: 'smooth' 
+                    });
+                }
+            }
+        });
+    </script>
+</body>
+</html>
